@@ -743,7 +743,21 @@ function renderGenreTab(){
     var c=genreColor(genre),rc=gb.filter(function(b){return readSet.has(b.idx);}).length;
     var pct=Math.round(rc/gb.length*100);
     var tp=gb.reduce(function(s,b){return s+b.pages;},0);
-    gb.sort(function(a,b){var ao=a.seriesOrder,bo=b.seriesOrder;if(!ao&&!bo)return 0;if(!ao)return 1;if(!bo)return -1;var an=parseFloat(ao),bn=parseFloat(bo);if(!isNaN(an)&&!isNaN(bn))return an-bn;return ao.localeCompare(bo);});
+    gb.sort(function(a,b){
+      var ak=(a.seriesName||a.title||"").toLowerCase();
+      var bk=(b.seriesName||b.title||"").toLowerCase();
+      if(ak!==bk)return ak<bk?-1:1;
+      var ao=a.seriesOrder,bo=b.seriesOrder;
+      if(!ao&&!bo)return 0;
+      if(!ao)return 1;
+      if(!bo)return -1;
+      var an=parseFloat(ao),bn=parseFloat(bo);
+      var aN=!isNaN(an),bN=!isNaN(bn);
+      if(aN&&bN)return an-bn;
+      if(aN&&!bN)return 1;
+      if(!aN&&bN)return -1;
+      return ao.localeCompare(bo);
+    });
     var rows=gb.map(function(b){
       var isRead=readSet.has(b.idx);
       var hasName=!!b.seriesName;
