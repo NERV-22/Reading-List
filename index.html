@@ -294,7 +294,7 @@ tbody tr.is-reading>td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <input class="span-full" type="text" id="f-author" placeholder="Author"/>
         <input type="number" id="f-pages" placeholder="Page count" min="1"/>
         <input type="text" id="f-series" placeholder="Series # (optional, e.g. 1, 2, Prequel)"/>
-        <input class="span-full" type="text" id="f-series-name" placeholder="Series name (optional, e.g. Foundation Series)"/>
+        <input class="span-full" type="text" id="f-series-name" placeholder="Series name (optional, e.g. Harry Potter)"/>
         <textarea class="span-full" id="f-summary" placeholder="Summary / thoughts (optional)"></textarea>
       </div>
       <p class="genre-pick-label">Genre - pick an existing one or type a new one:</p>
@@ -419,7 +419,18 @@ function loadListData(id){
     var r=localStorage.getItem(readKey(id));
     books=b?JSON.parse(b):(id===lists[0].id?SEED.map(function(x){return Object.assign({},x);}): []);
     readSet=r?new Set(JSON.parse(r)):new Set();
-    books.forEach(function(b){if(b.summary===undefined)b.summary="";if(b.myRating===undefined)b.myRating=0;if(b.optional===undefined)b.optional=false;if(b.isFav===undefined)b.isFav=false;if(b.isReading===undefined)b.isReading=false;if(!b.sessions)b.sessions=[];if(b.seriesOrder===undefined)b.seriesOrder="";if(b.seriesName===undefined)b.seriesName="";});
+    // Backfill defaults for fields added in later versions, so old data
+    // saved before those fields existed still loads cleanly.
+    books.forEach(function(b){
+      if(b.summary===undefined)     b.summary="";
+      if(b.myRating===undefined)    b.myRating=0;
+      if(b.optional===undefined)    b.optional=false;
+      if(b.isFav===undefined)       b.isFav=false;
+      if(b.isReading===undefined)   b.isReading=false;
+      if(!b.sessions)               b.sessions=[];
+      if(b.seriesOrder===undefined) b.seriesOrder="";
+      if(b.seriesName===undefined)  b.seriesName="";
+    });
   }catch(e){books=[];readSet=new Set();}
   var lst=lists.find(function(l){return l.id===id;})||lists[0];
   if(!lst.theme)lst.theme=Object.assign({},DEFAULT_THEME);
@@ -552,10 +563,15 @@ function renderTopBar(){
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+// Format a book's series info for display. Returns "" if no series,
+// "Foundation Series" if there's a name but no order, or
+// "Foundation Series · #1" / "Robot Series · Stories" depending on
+// whether the order looks numeric.
 function seriesText(b){
-  if(!b||!b.seriesName)return"";
-  if(!b.seriesOrder)return b.seriesName;
-  return b.seriesName+" · "+(/^\d+(\.\d+)?$/.test(b.seriesOrder)?"#":"")+b.seriesOrder;
+  if(!b || !b.seriesName) return "";
+  if(!b.seriesOrder) return b.seriesName;
+  var isNumeric = /^\d+(\.\d+)?$/.test(b.seriesOrder);
+  return b.seriesName + " · " + (isNumeric ? "#" : "") + b.seriesOrder;
 }
 
 function allGenres(){
@@ -639,7 +655,13 @@ function filteredBooks(){
   var list=[];
   for(var i=0;i<books.length;i++){
     var b=Object.assign({},books[i],{idx:i});
-    if(q&&b.title.toLowerCase().indexOf(q)<0&&b.author.toLowerCase().indexOf(q)<0&&(!b.seriesName||b.seriesName.toLowerCase().indexOf(q)<0))continue;
+    // Search matches title, author, OR series name (the third clause is
+    // skipped if the book has no series name, which avoids a null check).
+    if(q
+      && b.title.toLowerCase().indexOf(q)<0
+      && b.author.toLowerCase().indexOf(q)<0
+      && (!b.seriesName || b.seriesName.toLowerCase().indexOf(q)<0)
+    )continue;
     if(activeGenreFilter&&b.genre!==activeGenreFilter)continue;
     if(rf==="read"&&!readSet.has(i))continue;
     if(rf==="unread"&&(readSet.has(i)||b.isReading))continue;
@@ -647,6 +669,8 @@ function filteredBooks(){
     list.push(b);
   }
   list.sort(function(a,b){
+    // Currently-reading books always float to the top, regardless of
+    // which column the user has selected to sort by.
     if(a.isReading&&!b.isReading)return -1;
     if(!a.isReading&&b.isReading)return 1;
     if(sortKey==="myRating")return sortDir*((b.myRating||0)-(a.myRating||0));
@@ -669,17 +693,21 @@ function renderTable(){
   list.forEach(function(b){
     var isRead=readSet.has(b.idx);
     var sumText=b.summary?esc(b.summary):'<span class="summary-no-text">No summary added yet — click ✎ to add one.</span>';
-    var rc=(isRead?'is-read':'')+(b.isReading?' is-reading':'');
-    var hasName=!!b.seriesName;
-    var sn=(b.seriesOrder&&!hasName)?'<span class="snum">('+esc(b.seriesOrder)+')</span>':'';
-    var seriesLine=hasName?'<span class="title-series">'+esc(seriesText(b))+'</span>':'';
-    var sc=b.sessions&&b.sessions.length;
-    var sbadge=sc?(sc>1?'<span class="sbadge">'+sc+' reads</span>':(b.sessions[0].end?'<span class="sbadge">'+esc(b.sessions[0].end)+'</span>':'')):'';
-    rows+='<tr class="'+rc+'">'
+    var rowClass=(isRead?'is-read':'')+(b.isReading?' is-reading':'');
+    // Series can render two different ways:
+    //   - inline "(1)" tag, when only seriesOrder is set (legacy data)
+    //   - a subtitle line under the title, when seriesName is set
+    var hasSeriesName=!!b.seriesName;
+    var inlineSeriesTag=(b.seriesOrder&&!hasSeriesName)?'<span class="snum">('+esc(b.seriesOrder)+')</span>':'';
+    var seriesLine=hasSeriesName?'<span class="title-series">'+esc(seriesText(b))+'</span>':'';
+    // Show a small badge when the user has logged reading sessions.
+    var sessionCount=b.sessions&&b.sessions.length;
+    var sessionBadge=sessionCount?(sessionCount>1?'<span class="sbadge">'+sessionCount+' reads</span>':(b.sessions[0].end?'<span class="sbadge">'+esc(b.sessions[0].end)+'</span>':'')):'';
+    rows+='<tr class="'+rowClass+'">'
       +'<td><button class="chk'+(isRead?' checked':'')+'" onclick="toggleRead('+b.idx+')"></button></td>'
       +'<td><div class="title-cell-wrap">'
         +'<span class="title-text" onmouseenter="showTT('+b.idx+',this)" onmouseleave="hideTT('+b.idx+')">'
-          +esc(b.title)+sn+(b.optional?'<span class="optional-tag">(optional)</span>':'')+sbadge
+          +esc(b.title)+inlineSeriesTag+(b.optional?'<span class="optional-tag">(optional)</span>':'')+sessionBadge
         +'</span>'
         +seriesLine
         +'</div></td>'
@@ -709,14 +737,22 @@ function showTT(idx,span){
   var st=seriesText(b);
   var seriesHeader=st?'<div class="summary-tooltip-series">'+esc(st)+'</div>':'';
   t.innerHTML='<div class="summary-tooltip-title">'+esc(b.title)+'</div>'+seriesHeader+sumText;
+
+  // Position the tooltip below the title cell. We anchor to the wrap's
+  // bottom rather than the title-text's, so the tooltip clears the
+  // series subtitle when one is present.
   var r=span.getBoundingClientRect();
   var wrap=span.parentElement;
   var bottomY=wrap?wrap.getBoundingClientRect().bottom:r.bottom;
-  var top=bottomY+6,left=r.left;
-  if(left+320>window.innerWidth-8)left=window.innerWidth-328;
-  if(left<8)left=8;
-  if(top+220>window.innerHeight-8)top=r.top-226;
-  t.style.top=top+"px";t.style.left=left+"px";
+  var top=bottomY+6, left=r.left;
+
+  // Clamp horizontally inside the viewport (tooltip is ~320px wide).
+  if(left+320>window.innerWidth-8) left=window.innerWidth-328;
+  if(left<8) left=8;
+  // If there isn't room below, flip above the title.
+  if(top+220>window.innerHeight-8) top=r.top-226;
+
+  t.style.top=top+"px"; t.style.left=left+"px";
   t.classList.add("visible");
   t.onmouseleave=function(){_ttTimer=setTimeout(function(){t.classList.remove("visible");},120);};
 }
@@ -743,6 +779,13 @@ function renderGenreTab(){
     var c=genreColor(genre),rc=gb.filter(function(b){return readSet.has(b.idx);}).length;
     var pct=Math.round(rc/gb.length*100);
     var tp=gb.reduce(function(s,b){return s+b.pages;},0);
+    // Group books on the genre tab by series:
+    //   - Primary key is series name (or the title, for standalones).
+    //     This makes Foundation #1, #2, #3 cluster together while
+    //     standalones interleave alphabetically with the series blocks.
+    //   - Within a series, numeric orders sort ascending. Non-numeric
+    //     orders ("Stories", "Prequel", "0.5") come BEFORE the numbered
+    //     books — so I, Robot ("Stories") sits before The Caves of Steel (#1).
     gb.sort(function(a,b){
       var ak=(a.seriesName||a.title||"").toLowerCase();
       var bk=(b.seriesName||b.title||"").toLowerCase();
@@ -760,14 +803,14 @@ function renderGenreTab(){
     });
     var rows=gb.map(function(b){
       var isRead=readSet.has(b.idx);
-      var hasName=!!b.seriesName;
-      var gsn=(b.seriesOrder&&!hasName)?'<span class="snum">('+esc(b.seriesOrder)+')</span>':'';
-      var gSeriesLine=hasName?'<span class="genre-book-series">'+esc(seriesText(b))+'</span>':'';
+      var hasSeriesName=!!b.seriesName;
+      var inlineSeriesTag=(b.seriesOrder&&!hasSeriesName)?'<span class="snum">('+esc(b.seriesOrder)+')</span>':'';
+      var seriesLine=hasSeriesName?'<span class="genre-book-series">'+esc(seriesText(b))+'</span>':'';
       return '<div class="genre-book-row'+(isRead?' is-read':'')+'" onclick="toggleRead('+b.idx+')">'
         +'<button class="chk'+(isRead?' checked':'')+'" onclick="event.stopPropagation();toggleRead('+b.idx+')"></button>'
         +'<div class="genre-book-info">'
-          +'<span class="genre-book-title">'+esc(b.title)+gsn+(b.optional?'<span class="optional-tag">(optional)</span>':'')+'</span>'
-          +gSeriesLine
+          +'<span class="genre-book-title">'+esc(b.title)+inlineSeriesTag+(b.optional?'<span class="optional-tag">(optional)</span>':'')+'</span>'
+          +seriesLine
         +'</div>'
         +'<span class="genre-book-author">'+esc(b.author)+'</span>'
         +'<span class="genre-book-pages">'+b.pages+'p</span></div>';
@@ -816,23 +859,37 @@ function updateGenrePreview(){
 function clearFormError(){var e=document.getElementById("form-error");e.textContent="";e.classList.add("hidden");}
 function showFormError(m){var e=document.getElementById("form-error");e.textContent=m;e.classList.remove("hidden");}
 function submitBook(){
-  var title=document.getElementById("f-title").value.trim();
-  var author=document.getElementById("f-author").value.trim();
-  var pages=parseInt(document.getElementById("f-pages").value);
-  var seriesOrder=document.getElementById("f-series").value.trim();
-  var seriesName=document.getElementById("f-series-name").value.trim();
-  var summary=document.getElementById("f-summary").value.trim();
-  var genre=document.getElementById("f-custom-genre").value.trim()||selectedFormGenre;
-  if(!title)return showFormError("Title is required.");
-  if(!author)return showFormError("Author is required.");
-  if(isNaN(pages)||pages<1)return showFormError("Enter a valid page count.");
-  if(!genre)return showFormError("Please select or type a genre.");
-  books.push({title:title,author:author,pages:pages,genre:genre,summary:summary,optional:false,myRating:0,seriesOrder:seriesOrder,seriesName:seriesName,isFav:false,isReading:false,sessions:[]});
+  // Read and validate the form fields.
+  var title       = document.getElementById("f-title").value.trim();
+  var author      = document.getElementById("f-author").value.trim();
+  var pages       = parseInt(document.getElementById("f-pages").value);
+  var seriesOrder = document.getElementById("f-series").value.trim();
+  var seriesName  = document.getElementById("f-series-name").value.trim();
+  var summary     = document.getElementById("f-summary").value.trim();
+  var genre       = document.getElementById("f-custom-genre").value.trim() || selectedFormGenre;
+
+  if(!title)                   return showFormError("Title is required.");
+  if(!author)                  return showFormError("Author is required.");
+  if(isNaN(pages) || pages<1)  return showFormError("Enter a valid page count.");
+  if(!genre)                   return showFormError("Please select or type a genre.");
+
+  books.push({
+    title:title, author:author, pages:pages, genre:genre,
+    summary:summary, optional:false, myRating:0,
+    seriesOrder:seriesOrder, seriesName:seriesName,
+    isFav:false, isReading:false, sessions:[]
+  });
   saveCurrentList();
-  ["f-title","f-author","f-pages","f-series","f-series-name","f-summary","f-custom-genre"].forEach(function(id){document.getElementById(id).value="";});
-  selectedFormGenre="";document.getElementById("genre-preview").classList.add("hidden");clearFormError();
+
+  // Reset the form so the next book starts from a blank slate.
+  ["f-title","f-author","f-pages","f-series","f-series-name","f-summary","f-custom-genre"]
+    .forEach(function(id){document.getElementById(id).value="";});
+  selectedFormGenre="";
+  document.getElementById("genre-preview").classList.add("hidden");
+  clearFormError();
+
   updateStats();renderFilterPills();renderGenreDropdown();renderGenrePickPills();
-  currentTab==="list"?renderTable():renderGenreTab();
+  currentTab==="list" ? renderTable() : renderGenreTab();
   toggleAddForm();
 }
 
@@ -854,19 +911,39 @@ document.getElementById("edit-modal").addEventListener("click",function(e){if(e.
 
 // ── Delete + undo ─────────────────────────────────────────────────────────────
 function deleteBook(idx){
-  deletedBook=Object.assign({},books[idx]);deletedIdx=idx;
+  // Stash a copy of the book so undoDelete() can restore it.
+  deletedBook = Object.assign({},books[idx]);
+  deletedIdx = idx;
   books.splice(idx,1);
-  var nr=new Set();readSet.forEach(function(i){if(i<idx)nr.add(i);else if(i>idx)nr.add(i-1);});readSet=nr;
+
+  // readSet stores indexes into the books array. Now that we removed
+  // book #idx, every read-marker after it shifts down by one.
+  var shifted = new Set();
+  readSet.forEach(function(i){
+    if(i<idx) shifted.add(i);
+    else if(i>idx) shifted.add(i-1);
+  });
+  readSet = shifted;
+
   saveCurrentList();updateStats();renderFilterPills();renderGenreDropdown();
-  currentTab==="list"?renderTable():renderGenreTab();
+  currentTab==="list" ? renderTable() : renderGenreTab();
   showToast('"'+deletedBook.title+'" removed');
 }
+
 function undoDelete(){
-  if(!deletedBook)return;
+  if(!deletedBook) return;
   books.splice(deletedIdx,0,deletedBook);
-  var nr=new Set();readSet.forEach(function(i){nr.add(i<deletedIdx?i:i+1);});readSet=nr;
+
+  // Mirror image of the delete-time shift: readSet indexes at or after
+  // the restored slot all bump up by one.
+  var shifted = new Set();
+  readSet.forEach(function(i){
+    shifted.add(i<deletedIdx ? i : i+1);
+  });
+  readSet = shifted;
+
   saveCurrentList();updateStats();renderFilterPills();renderGenreDropdown();
-  currentTab==="list"?renderTable():renderGenreTab();
+  currentTab==="list" ? renderTable() : renderGenreTab();
   deletedBook=null;deletedIdx=-1;hideToast();
 }
 function showToast(msg){
@@ -901,7 +978,17 @@ function importBackup(e){
       var targetName=activeList().name;
       if(!confirm('Replace "'+targetName+'" ('+books.length+' books) with backup "'+( data.listName||"untitled")+'" ('+data.books.length+' books)?'))return;
       books=data.books;
-      books.forEach(function(b){if(b.summary===undefined)b.summary="";if(b.myRating===undefined)b.myRating=0;if(b.optional===undefined)b.optional=false;if(b.isFav===undefined)b.isFav=false;if(b.isReading===undefined)b.isReading=false;if(!b.sessions)b.sessions=[];if(b.seriesOrder===undefined)b.seriesOrder="";if(b.seriesName===undefined)b.seriesName="";});
+      // Same backfill as loadListData — old backup files predate some fields.
+      books.forEach(function(b){
+        if(b.summary===undefined)     b.summary="";
+        if(b.myRating===undefined)    b.myRating=0;
+        if(b.optional===undefined)    b.optional=false;
+        if(b.isFav===undefined)       b.isFav=false;
+        if(b.isReading===undefined)   b.isReading=false;
+        if(!b.sessions)               b.sessions=[];
+        if(b.seriesOrder===undefined) b.seriesOrder="";
+        if(b.seriesName===undefined)  b.seriesName="";
+      });
       readSet=data.read?new Set(data.read):new Set();
       if(data.listName&&data.listName.trim()){activeList().name=data.listName.trim();document.getElementById("list-name-input").value=data.listName.trim();}
       if(data.theme){activeList().theme=Object.assign({},DEFAULT_THEME,data.theme);applyTheme(activeList().theme);if(document.getElementById("theme-panel").classList.contains("open"))syncPk(activeList().theme);}
