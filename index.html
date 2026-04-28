@@ -11,9 +11,7 @@
   --text:#1a1a1a;--text-muted:rgba(26,26,26,0.52);--border:#ebe8e2;--star:#d4960a;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{background:var(--bg1)}
-body{font-family:'Georgia',serif;color:var(--text);min-height:100vh;padding:0;background:none;position:relative}
-body::before{content:"";position:fixed;inset:0;background:var(--bg-gradient);z-index:-1}
+body{font-family:'Georgia',serif;color:var(--text);min-height:100vh;padding:0;background:var(--bg-gradient);background-attachment:fixed}
 .top-bar{background:var(--surface);border-bottom:1.5px solid var(--border);padding:0 20px;display:flex;align-items:stretch;gap:0;overflow-x:auto;position:sticky;top:0;z-index:100}
 .list-tab{display:flex;align-items:center;gap:6px;padding:12px 16px;font-size:13px;font-family:sans-serif;font-weight:600;color:var(--text-muted);background:none;border:none;border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;margin-bottom:-1.5px;transition:color .15s}
 .list-tab.active{color:var(--text);border-bottom-color:var(--accent)}
@@ -26,6 +24,8 @@ body::before{content:"";position:fixed;inset:0;background:var(--bg-gradient);z-i
 .new-list-btn:hover{color:var(--text)}
 .theme-btn{display:flex;align-items:center;padding:12px 14px;font-size:16px;color:var(--text-muted);background:none;border:none;cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;transition:color .15s;flex-shrink:0;margin-left:auto}
 .theme-btn:hover{color:var(--text)}
+.update-btn{display:flex;align-items:center;padding:12px 14px;font-size:20px;font-weight:700;color:var(--accent);background:none;border:none;cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;transition:all .15s;flex-shrink:0}
+.update-btn:hover{color:var(--text)}
 .container{max-width:1100px;margin:0 auto;padding:28px 20px}
 .list-header{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
 h1{font-size:28px;font-weight:700;letter-spacing:-0.5px}
@@ -89,10 +89,10 @@ tbody tr.is-read .title-text{text-decoration:line-through;color:var(--text-muted
 .chk.checked{background:var(--accent);border-color:var(--accent)}
 .chk.checked::after{content:"\2713";color:#fff;font-size:11px;font-weight:700}
 .showing-count{margin-top:10px;font-size:12px;color:var(--text-muted);font-family:sans-serif}
-#global-tooltip{position:fixed;z-index:99999;background:var(--surface)!important;border:1px solid var(--border);border-radius:10px;padding:12px 14px;width:320px;box-shadow:0 4px 24px rgba(0,0,0,.25);font-size:12px;line-height:1.65;color:var(--text);font-family:sans-serif;pointer-events:none;opacity:0;transition:opacity .15s;max-height:220px;overflow-y:auto;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-#global-tooltip.visible{opacity:1;pointer-events:auto}
-#global-tooltip .summary-tooltip-title{font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px;font-family:sans-serif;text-transform:uppercase;letter-spacing:.5px}
-#global-tooltip .summary-no-text{color:var(--text-muted);font-style:italic}
+.summary-tooltip{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;width:320px;box-shadow:0 4px 20px rgba(0,0,0,.12);font-size:12px;line-height:1.65;color:var(--text);font-family:sans-serif;pointer-events:none;opacity:0;transition:opacity .15s;max-height:220px;overflow-y:auto}
+.summary-tooltip.visible{opacity:1;pointer-events:auto}
+.summary-tooltip-title{font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px;font-family:sans-serif;text-transform:uppercase;letter-spacing:.5px}
+.summary-no-text{color:var(--text-muted);font-style:italic}
 .genre-grid{display:flex;flex-direction:column;gap:28px}
 .genre-header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-bottom:8px}
 .genre-name-row{display:flex;align-items:center;gap:8px}
@@ -180,7 +180,7 @@ tbody tr.is-read .title-text{text-decoration:line-through;color:var(--text-muted
 .tpsr{display:flex;gap:6px;align-items:center;margin-top:6px}
 .tpok{font-size:12px;padding:5px 12px;border:none;border-radius:6px;background:var(--accent);color:#fff;cursor:pointer;font-family:sans-serif;font-weight:600}
 .tpcl{font-size:12px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-muted);cursor:pointer;font-family:sans-serif}
-body.card-frosted .stat,body.card-frosted .table-wrap,body.card-frosted .add-form,body.card-frosted .genre-book-row{background:var(--surface-glass)!important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+body.card-frosted .stat,body.card-frosted .table-wrap,body.card-frosted .add-form,body.card-frosted .genre-book-row,body.card-frosted .summary-tooltip{background:var(--surface-glass)!important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 body.card-frosted tbody tr{background:transparent!important}
 body.card-frosted tbody tr:hover td{background:rgba(255,255,255,0.05)!important}
 body.card-frosted .filter-row input,body.card-frosted .filter-row select,body.card-frosted .form-grid input,body.card-frosted .form-grid textarea,body.card-frosted .custom-genre-input{background:var(--surface-glass)!important}
@@ -444,7 +444,7 @@ function switchList(id){
   activeGenreFilter="";sortKey="title";sortDir=1;currentTab="list";
   document.getElementById("search-input").value="";
   document.getElementById("read-select").value="";
-  var _gtsl=document.getElementById("global-tooltip");if(_gtsl)_gtsl.classList.remove("visible");
+  document.querySelectorAll(".summary-tooltip.visible").forEach(function(el){el.classList.remove("visible");});
   if(!document.getElementById("add-form").classList.contains("hidden"))toggleAddForm();
   ["f-title","f-author","f-pages","f-series","f-summary","f-custom-genre"].forEach(function(id){document.getElementById(id).value="";});
   document.getElementById("genre-preview").classList.add("hidden");
@@ -526,6 +526,7 @@ function renderTopBar(){
   });
   html+='<button class="new-list-btn" onclick="createList()" title="New list">＋</button>';
   html+='<button class="theme-btn" onclick="toggleThemePanel()" title="Customise theme">&#127912;</button>';
+  html+='<button class="update-btn" onclick="downloadUpdate()" title="Download latest version">&#8681;</button>';
   document.getElementById("top-bar").innerHTML=html;
 }
 
@@ -633,7 +634,7 @@ function filteredBooks(){
 
 // ── Render table ──────────────────────────────────────────────────────────────
 function renderTable(){
-  var _gt=document.getElementById("global-tooltip");if(_gt)_gt.classList.remove("visible");
+  document.querySelectorAll(".summary-tooltip.visible").forEach(function(el){el.classList.remove("visible");});
   var list=filteredBooks(),tbody=document.getElementById("book-tbody");
   if(!list.length){
     tbody.innerHTML='<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--text-muted);font-family:sans-serif;font-size:13px">'+(books.length?'No books match your filters.':'No books yet — add one below!')+'</td></tr>';
@@ -650,10 +651,12 @@ function renderTable(){
     rows+='<tr class="'+rc+'">'
       +'<td><button class="chk'+(isRead?' checked':'')+'" onclick="toggleRead('+b.idx+')"></button></td>'
       +'<td><div class="title-cell-wrap">'
-        +'<span class="title-text" onmouseenter="showTT('+b.idx+',this)" onmouseleave="hideTT('+b.idx+')">'
+        +'<span class="title-text" onmouseenter="showTT('+b.idx+')" onmouseleave="hideTT('+b.idx+')">'
           +esc(b.title)+sn+(b.optional?'<span class="optional-tag">(optional)</span>':'')+sbadge
         +'</span>'
-        +'</div></td>'
+        +'<div class="summary-tooltip" id="tt-'+b.idx+'">'
+          +'<div class="summary-tooltip-title">'+esc(b.title)+'</div>'+sumText
+        +'</div></div></td>'
       +'<td class="author-cell">'+esc(b.author)+'</td>'
       +'<td class="pages-cell">'+b.pages+'</td>'
       +'<td>'+myStarsHTML(b.idx,b.myRating||0)+'</td>'
@@ -671,25 +674,24 @@ function renderTable(){
 }
 
 // ── Tooltip ───────────────────────────────────────────────────────────────────
-var _ttTimer=null;
-function showTT(idx,span){
-  clearTimeout(_ttTimer);
-  var t=document.getElementById("global-tooltip");if(!t)return;
-  var b=books[idx];if(!b)return;
-  var sumText=b.summary?esc(b.summary):'<span class="summary-no-text">No summary added yet — click ✎ to add one.</span>';
-  t.innerHTML='<div class="summary-tooltip-title">'+esc(b.title)+'</div>'+sumText;
-  var r=span.getBoundingClientRect();
-  var top=r.bottom+6,left=r.left;
-  if(left+320>window.innerWidth-8)left=window.innerWidth-328;
-  if(left<8)left=8;
-  if(top+220>window.innerHeight-8)top=r.top-226;
-  t.style.top=top+"px";t.style.left=left+"px";
+function showTT(idx){
+  document.querySelectorAll(".summary-tooltip.visible").forEach(function(el){el.classList.remove("visible");});
+  var t=document.getElementById("tt-"+idx);if(!t)return;
+  var span=t.previousElementSibling;
+  if(span){
+    var r=span.getBoundingClientRect();
+    var top=r.bottom+6,left=r.left;
+    if(left+320>window.innerWidth-8)left=window.innerWidth-328;
+    if(left<8)left=8;
+    if(top+220>window.innerHeight-8)top=r.top-226;
+    t.style.top=top+"px";t.style.left=left+"px";
+  }
   t.classList.add("visible");
-  t.onmouseleave=function(){_ttTimer=setTimeout(function(){t.classList.remove("visible");},120);};
+  t.onmouseleave=function(){t.classList.remove("visible");};
 }
 function hideTT(idx){
-  var t=document.getElementById("global-tooltip");if(!t)return;
-  _ttTimer=setTimeout(function(){if(!t.matches(':hover'))t.classList.remove("visible");},120);
+  var t=document.getElementById("tt-"+idx);if(!t)return;
+  setTimeout(function(){if(!t.matches(':hover'))t.classList.remove("visible");},120);
 }
 
 // ── Toggle read ───────────────────────────────────────────────────────────────
@@ -701,7 +703,6 @@ function toggleRead(idx){
 
 // ── Genre tab ─────────────────────────────────────────────────────────────────
 function renderGenreTab(){
-  var _gtg=document.getElementById("global-tooltip");if(_gtg)_gtg.classList.remove("visible");
   var genres=allGenres(),html="";
   genres.forEach(function(genre){
     var gb=[];
@@ -731,7 +732,6 @@ function renderGenreTab(){
 
 // ── Tab switch (All Books / By Genre) ─────────────────────────────────────────
 function switchTab(tab){
-  var _gts=document.getElementById("global-tooltip");if(_gts)_gts.classList.remove("visible");
   currentTab=tab;
   document.querySelectorAll(".tab-btn").forEach(function(btn,i){btn.classList.toggle("active",(i===0&&tab==="list")||(i===1&&tab==="genre"));});
   document.getElementById("tab-list").classList.toggle("hidden",tab!=="list");
@@ -870,7 +870,6 @@ function gradCss(t){if(t.gradientDir==="vertical")return"linear-gradient(180deg,
 function applyTheme(t){
   var s=document.documentElement.style;
   s.setProperty("--bg1",t.bg1);s.setProperty("--bg2",t.bg2);s.setProperty("--bg-gradient",gradCss(t));
-  document.documentElement.style.backgroundColor=t.bg1;
   s.setProperty("--surface",t.surface);s.setProperty("--surface-glass",rgba(t.surface,0.13));
   s.setProperty("--accent",t.accent);s.setProperty("--accent-shadow",rgba(t.accent,0.2));
   s.setProperty("--text",t.text);s.setProperty("--text-muted",rgba(t.text,0.52));
@@ -996,6 +995,32 @@ function updS(i,field,val){
   saveCurrentList();renderTable();
 }
 
+
+// ── Update download ───────────────────────────────────────────────────────────
+function downloadUpdate(){
+  var url="https://raw.githubusercontent.com/NERV-22/Reading-List/main/index.html";
+  showToast("Downloading latest version...");
+  fetch(url)
+    .then(function(r){
+      if(!r.ok)throw new Error("Failed to fetch");
+      return r.blob();
+    })
+    .then(function(blob){
+      var a=document.createElement("a");
+      var burl=URL.createObjectURL(blob);
+      a.href=burl;
+      a.download="Reading_List.html";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(burl);
+      showToast("Downloaded! Replace your old file with the new one.");
+    })
+    .catch(function(){
+      showToast("Could not download — check your internet connection.");
+    });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 loadP();
 loadAll();
@@ -1003,6 +1028,5 @@ renderTopBar();
 document.getElementById("list-name-input").value=activeList().name;
 updateStats();renderFilterPills();renderGenreDropdown();renderGenrePickPills();renderTable();
 </script>
-<div id="global-tooltip"></div>
 </body>
 </html>
