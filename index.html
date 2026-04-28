@@ -1005,4 +1005,70 @@ function renderSM(){
   var n=ss.length;
   document.getElementById("sm-count").textContent=n?n+' session'+(n!==1?'s':''):'';
   if(!n){
-    docume
+    document.getElementById("sm-list").innerHTML='<p style="font-size:12px;color:var(--text-muted);font-family:sans-serif;text-align:center;padding:8px 0">No sessions yet. Click \"+ Add session\" to log a read.</p>';
+    return;
+  }
+  document.getElementById("sm-list").innerHTML=ss.map(function(s,i){
+    return '<div class="sitem">'
+      +'<div class="sfields">'
+        +'<div class="srow"><span class="slbl">Start</span><input class="sinput" type="date" value="'+esc(s.start||'')+'" onchange="updS('+i+',\'start\',this.value)"/></div>'
+        +'<div class="srow"><span class="slbl">End</span><input class="sinput" type="date" value="'+esc(s.end||'')+'" onchange="updS('+i+',\'end\',this.value)"/></div>'
+        +'<textarea class="snote" placeholder="Note e.g. first read, reread after watching the film..." onchange="updS('+i+',\'note\',this.value)">'+esc(s.note||'')+'</textarea>'
+      +'</div>'
+      +'<button class="sdel" onclick="delS('+i+')" title="Remove">&#10005;</button>'
+      +'</div>';
+  }).join("");
+}
+function addSession(){
+  if(smIdx<0)return;
+  if(!books[smIdx].sessions)books[smIdx].sessions=[];
+  books[smIdx].sessions.push({start:"",end:"",note:""});
+  saveCurrentList();renderSM();renderTable();
+}
+function delS(i){
+  if(smIdx<0)return;
+  books[smIdx].sessions.splice(i,1);
+  saveCurrentList();renderSM();renderTable();
+}
+function updS(i,field,val){
+  if(smIdx<0)return;
+  books[smIdx].sessions[i][field]=val;
+  saveCurrentList();renderTable();
+}
+
+
+// ── Update download ───────────────────────────────────────────────────────────
+function downloadUpdate(){
+  var url="https://raw.githubusercontent.com/NERV-22/Reading-List/refs/heads/main/index.html";
+  showToast("Downloading latest version...");
+  fetch(url)
+    .then(function(r){
+      if(!r.ok)throw new Error("Failed to fetch");
+      return r.blob();
+    })
+    .then(function(blob){
+      var a=document.createElement("a");
+      var burl=URL.createObjectURL(blob);
+      a.href=burl;
+      a.download="Reading_List.html";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(burl);
+      showToast("Downloaded! Replace your old file with the new one.");
+    })
+    .catch(function(){
+      showToast("Could not download — check your internet connection.");
+    });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadP();
+loadAll();
+renderTopBar();
+document.getElementById("list-name-input").value=activeList().name;
+updateStats();renderFilterPills();renderGenreDropdown();renderGenrePickPills();renderTable();
+</script>
+<div id="global-tooltip"></div>
+</body>
+</html>
