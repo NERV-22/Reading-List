@@ -159,8 +159,11 @@ tbody tr.is-read .title-series{opacity:.6}
 .add-form{margin-top:12px;padding:20px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:12px}
 .form-title-text{font-size:13px;font-weight:700;font-family:sans-serif;color:var(--text)}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.form-grid input,.form-grid select,.form-grid textarea{padding:8px 12px;font-size:13px;font-family:sans-serif;border:1px solid var(--border);border-radius:8px;background:var(--bg1);color:var(--text);outline:none}
+.form-grid input,.form-grid select,.form-grid textarea{padding:8px 12px;font-size:13px;font-family:sans-serif;border:1px solid var(--border);border-radius:8px;background:var(--bg1);color:var(--text);outline:none;min-width:0}
 .form-grid textarea{resize:vertical;min-height:80px;line-height:1.5}
+@media (max-width:560px){
+  .form-grid{grid-template-columns:1fr}
+}
 .span-full{grid-column:1/-1}
 .genre-pick-label{font-size:12px;color:var(--text-muted);font-family:sans-serif}
 .genre-pick-pills{display:flex;flex-wrap:wrap;gap:6px}
@@ -172,6 +175,11 @@ tbody tr.is-read .title-series{opacity:.6}
 .submit-btn:hover{opacity:.82}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
 .modal{background:var(--surface);border-radius:14px;padding:24px;width:100%;max-width:520px;display:flex;flex-direction:column;gap:14px;box-shadow:0 8px 40px rgba(0,0,0,.15)}
+@media (max-width:560px){
+  .modal-overlay{padding:12px}
+  .modal{padding:18px;gap:12px}
+  .modal[style*="max-width:560"],.modal[style*="max-width:540"]{max-width:none}
+}
 .modal-title{font-size:16px;font-weight:700;color:var(--text)}
 .modal-subtitle{font-size:13px;color:var(--text-muted);font-family:sans-serif;margin-top:-8px}
 .modal textarea{padding:10px 12px;font-size:13px;font-family:sans-serif;border:1px solid var(--border);border-radius:8px;background:var(--bg1);color:var(--text);outline:none;resize:vertical;min-height:120px;line-height:1.6;width:100%}
@@ -221,6 +229,7 @@ tbody tr.is-read .title-series{opacity:.6}
 .pft{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:var(--surface)}
 .pnm{font-size:11px;font-weight:600;font-family:sans-serif;color:var(--text)}
 .pdl{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:11px;padding:2px;line-height:1}.pdl:hover{color:#e05c5c}
+.pdl svg{width:11px;height:11px;display:block}
 .cpl{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
 .cpi{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg1)}
 .cpsw{width:22px;height:22px;border-radius:5px;flex-shrink:0;border:1px solid var(--border)}
@@ -263,6 +272,7 @@ tbody tr.is-reading>td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .snote{width:100%;padding:4px 8px;font-size:12px;font-family:sans-serif;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);outline:none;resize:none;height:38px;line-height:1.5;margin-top:2px}
 .snote:focus{border-color:var(--accent)}
 .sdel{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:15px;padding:2px;flex-shrink:0;transition:color .15s;margin-top:2px}
+.sdel svg{width:13px;height:13px;display:block}
 .sdel:hover{color:#e05c5c}
 .sadd{font-size:12px;font-family:sans-serif;padding:7px 14px;border:1.5px dashed var(--border);border-radius:8px;background:transparent;color:var(--text-muted);cursor:pointer;width:100%;text-align:center;transition:all .15s}
 .sadd:hover{border-color:var(--accent);color:var(--accent)}
@@ -333,7 +343,7 @@ tbody tr.is-reading>td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
           </span>
           <span class="paste-btn-label" id="paste-btn-label">Paste book</span>
         </button>
-        <button class="paste-clear" onclick="clearClipboard()" title="Clear clipboard" aria-label="Clear clipboard">&#10005;</button>
+        <button class="paste-clear" onclick="clearClipboard()" title="Clear clipboard" aria-label="Clear clipboard"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg"><path d="M4 4 L12 12 M12 4 L4 12"/></svg></button>
       </div>
     </div>
     <div class="paste-chooser" id="paste-chooser">
@@ -377,7 +387,15 @@ tbody tr.is-reading>td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   </div>
 </div>
 <div class="tp" id="theme-panel">
-  <div class="tp-hdr"><span class="tp-ttl">&#127912; Theme</span><button class="tp-x" onclick="toggleThemePanel()">&#10005;</button></div>
+  <div class="tp-hdr">
+    <span class="tp-ttl">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-3px;margin-right:6px"><path d="M8 2 C4.5 2 2 4.5 2 8 c0 3 2.5 5 5 5 c.8 0 1.3-.4 1.3-1 c0-.4-.2-.6-.2-1 c0-.6.4-1 1-1 H10 c2 0 3.5-1.5 3.5-3.5 C13.5 4 11 2 8 2 Z"/><circle cx="5" cy="7" r=".8" fill="currentColor" stroke="none"/><circle cx="6.5" cy="4.5" r=".8" fill="currentColor" stroke="none"/><circle cx="9.5" cy="4.5" r=".8" fill="currentColor" stroke="none"/><circle cx="11.5" cy="7" r=".8" fill="currentColor" stroke="none"/></svg>
+      Theme
+    </span>
+    <button class="tp-x" onclick="toggleThemePanel()" aria-label="Close">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg"><path d="M4 4 L12 12 M12 4 L4 12"/></svg>
+    </button>
+  </div>
   <div class="tp-body">
     <div>
       <div class="tp-lbl">Colours &amp; Style</div>
@@ -407,7 +425,10 @@ tbody tr.is-reading>td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 </div>
 <div class="modal-overlay hidden" id="sessions-modal">
   <div class="modal" style="max-width:540px">
-    <p class="modal-title">&#128197; Reading Sessions</p>
+    <p class="modal-title">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-2px;margin-right:6px"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M2.5 6.5 H13.5"/><path d="M5.5 2 V5 M10.5 2 V5"/><circle cx="5.5" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="8" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="10.5" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="5.5" cy="11.2" r=".6" fill="currentColor" stroke="none"/><circle cx="8" cy="11.2" r=".6" fill="currentColor" stroke="none"/></svg>
+      Reading Sessions
+    </p>
     <p class="modal-subtitle" id="sm-subtitle"></p>
     <div class="slist" id="sm-list"></div>
     <button class="sadd" onclick="addSession()">+ Add session</button>
@@ -489,6 +510,19 @@ var delBuiltins=[],customPresets=[],editCpIdx=-1;
 // State for the new ⋯ menu, edit-details modal, and copy/paste clipboard.
 var rowMenuIdx=-1, detailsIdx=-1, detailsSelectedGenre="";
 var clipboardBook=null;
+
+// ── Icon set ──────────────────────────────────────────────────────────────────
+// All UI icons live here so they share a stroke weight (1.4px) and use
+// currentColor to inherit the parent button's text color. Keeps row icons,
+// menu icons, and modal-header icons visually consistent.
+var ICONS = {
+  pencil: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 13.5 L4 10.5 L11 3.5 L12.5 5 L5.5 12 L2.5 13.5 Z"/><path d="M10 4.5 L11.5 6"/></svg>',
+  copy: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3.5" y="2.5" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="5.5" y="4.5" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="var(--surface)"/></svg>',
+  trash: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M3 4.5 H13"/><path d="M5 4.5 V3 a1 1 0 0 1 1-1 H10 a1 1 0 0 1 1 1 V4.5"/><path d="M4 4.5 L4.7 13.2 a1 1 0 0 0 1 .8 H10.3 a1 1 0 0 0 1-.8 L12 4.5"/><path d="M6.5 7 V11.5 M9.5 7 V11.5"/></svg>',
+  close: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg"><path d="M4 4 L12 12 M12 4 L4 12"/></svg>',
+  calendar: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M2.5 6.5 H13.5"/><path d="M5.5 2 V5 M10.5 2 V5"/><circle cx="5.5" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="8" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="10.5" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="5.5" cy="11.2" r=".6" fill="currentColor" stroke="none"/><circle cx="8" cy="11.2" r=".6" fill="currentColor" stroke="none"/></svg>',
+  palette: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M8 2 C4.5 2 2 4.5 2 8 c0 3 2.5 5 5 5 c.8 0 1.3-.4 1.3-1 c0-.4-.2-.6-.2-1 c0-.6.4-1 1-1 H10 c2 0 3.5-1.5 3.5-3.5 C13.5 4 11 2 8 2 Z"/><circle cx="5" cy="7" r=".8" fill="currentColor" stroke="none"/><circle cx="6.5" cy="4.5" r=".8" fill="currentColor" stroke="none"/><circle cx="9.5" cy="4.5" r=".8" fill="currentColor" stroke="none"/><circle cx="11.5" cy="7" r=".8" fill="currentColor" stroke="none"/></svg>'
+};
 
 // ── ID generator ──────────────────────────────────────────────────────────────
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
@@ -648,7 +682,7 @@ function renderTopBar(){
       +'</div>';
   });
   html+='<button class="new-list-btn" onclick="createList()" title="New list">＋</button>';
-  html+='<button class="theme-btn" onclick="toggleThemePanel()" title="Customise theme">&#127912;</button>';
+  html+='<button class="theme-btn" onclick="toggleThemePanel()" title="Customise theme" aria-label="Customise theme">'+ICONS.palette+'</button>';
   html+='<button class="update-btn" onclick="downloadUpdate()" title="Download latest version">&#8681;</button>';
   document.getElementById("top-bar").innerHTML=html;
 }
@@ -817,7 +851,7 @@ function renderTable(){
       +'<td>'+genreTagHTML(b.genre)+'</td>'
       +'<td><div class="actions-cell">'
         +'<button class="reading-btn'+(b.isReading?' on':'')+'" onclick="toggleReading('+b.idx+')" title="Currently reading">&#9654; Reading</button>'
-        +'<button class="icon-btn" style="font-size:15px" title="Reading sessions" onclick="openSM('+b.idx+')">&#128197;</button>'
+        +'<button class="icon-btn" title="Reading sessions" onclick="openSM('+b.idx+')">'+ICONS.calendar+'</button>'
         +'<button class="icon-btn menu-btn" title="More" onclick="openRowMenu(event,'+b.idx+')">&#8943;</button>'
       +'</div></td></tr>';
   });
@@ -1017,19 +1051,14 @@ function openRowMenu(ev,idx){
   var menu=document.getElementById("row-menu");
   menu.innerHTML=''
     +'<button class="row-menu-item" onclick="rowMenuAction(\'edit\')">'
-      +'<span class="row-menu-icon">&#9998;</span><span>Edit book details</span>'
+      +'<span class="row-menu-icon">'+ICONS.pencil+'</span><span>Edit book details</span>'
     +'</button>'
     +'<button class="row-menu-item" onclick="rowMenuAction(\'copy\')">'
-      +'<span class="row-menu-icon">'
-        +'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">'
-          +'<rect x="3.5" y="2.5" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/>'
-          +'<rect x="5.5" y="4.5" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="var(--surface)"/>'
-        +'</svg>'
-      +'</span><span>Copy book</span>'
+      +'<span class="row-menu-icon">'+ICONS.copy+'</span><span>Copy book</span>'
     +'</button>'
     +'<div class="row-menu-divider"></div>'
     +'<button class="row-menu-item danger" onclick="rowMenuAction(\'delete\')">'
-      +'<span class="row-menu-icon">&#10005;</span><span>Delete</span>'
+      +'<span class="row-menu-icon">'+ICONS.trash+'</span><span>Delete</span>'
     +'</button>';
   // Position the menu near the click target, then clamp into the viewport.
   var btn=ev.currentTarget;
@@ -1396,7 +1425,7 @@ function renderBG(){
     return'<div class="pc" onclick="applyPreset(BUILTIN_PRESETS.find(function(x){return x.id===\''+p.id+'\';}).theme)">'+
       '<div class="psw" style="background:'+gradCss(p.theme)+'"></div>'+
       '<div class="pft"><span class="pnm">'+esc(p.name)+'</span>'+
-      (p.dl?'<button class="pdl" onclick="event.stopPropagation();delBP(\''+p.id+'\')">&#10005;</button>':'')+
+      (p.dl?'<button class="pdl" onclick="event.stopPropagation();delBP(\''+p.id+'\')">'+ICONS.close+'</button>':'')+
       '</div></div>';
   }).join("")||'<p style="font-size:12px;color:var(--text-muted);font-family:sans-serif;grid-column:1/-1">All presets deleted.</p>';
 }
@@ -1465,7 +1494,7 @@ function renderSM(){
         +'<div class="srow"><span class="slbl">End</span><input class="sinput" type="date" value="'+esc(s.end||'')+'" onchange="updS('+i+',\'end\',this.value)"/></div>'
         +'<textarea class="snote" placeholder="Note e.g. first read, reread after watching the film..." onchange="updS('+i+',\'note\',this.value)">'+esc(s.note||'')+'</textarea>'
       +'</div>'
-      +'<button class="sdel" onclick="delS('+i+')" title="Remove">&#10005;</button>'
+      +'<button class="sdel" onclick="delS('+i+')" title="Remove">'+ICONS.close+'</button>'
       +'</div>';
   }).join("");
 }
