@@ -71,7 +71,7 @@ tbody td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:m
 tbody tr:last-child td{border-bottom:none}
 .title-cell-wrap{position:relative;display:inline-block;max-width:280px;vertical-align:middle}
 .title-text{font-size:14px;color:var(--text);cursor:default;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
-tbody tr.is-read .title-text{text-decoration:line-through;color:var(--text-muted)}
+tbody tr.is-read .title-text{color:var(--text-muted)}
 .optional-tag{font-size:11px;color:var(--text-muted);font-style:italic;font-family:sans-serif;margin-left:6px}
 .title-series{font-size:11px;font-family:sans-serif;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;letter-spacing:.2px;display:block}
 tbody tr.is-read .title-series{opacity:.6}
@@ -90,6 +90,41 @@ tbody tr.is-read .title-series{opacity:.6}
 .icon-btn{background:none;border:none;cursor:pointer;padding:4px;border-radius:4px;color:var(--text-muted);font-size:14px;line-height:1;transition:color .15s}
 .icon-btn.edit-btn:hover{color:#4a90d9}
 .icon-btn.del-btn:hover{color:#e05c5c}
+.icon-btn.menu-btn{font-size:18px;letter-spacing:1px;font-weight:700}
+.icon-btn.menu-btn:hover{color:var(--text)}
+.icon-btn svg{display:block}
+/* Floating row-action menu, positioned via JS using fixed coordinates */
+.row-menu{position:fixed;z-index:1500;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:5px;min-width:180px;display:none}
+.row-menu.visible{display:block}
+.row-menu-item{display:flex;align-items:center;gap:10px;width:100%;padding:8px 12px;font-size:13px;font-family:sans-serif;background:none;border:none;color:var(--text);cursor:pointer;border-radius:6px;text-align:left;transition:background .12s}
+.row-menu-item:hover{background:var(--bg1)}
+.row-menu-item .row-menu-icon{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--text-muted)}
+.row-menu-item.danger{color:#e05c5c}
+.row-menu-item.danger .row-menu-icon{color:#e05c5c}
+.row-menu-divider{height:1px;background:var(--border);margin:4px 0}
+/* Paste pill — a wrapper with two buttons (the paste action + a clear-X).
+   The wrapper carries the dashed outline; only its descendants are clickable. */
+.add-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.paste-pill{display:none;align-items:stretch;border:1.5px dashed var(--border);border-radius:10px;color:var(--text-muted);max-width:300px;overflow:hidden;transition:border-color .15s,color .15s}
+.paste-pill.visible{display:inline-flex}
+.paste-pill:hover{border-color:var(--accent);color:var(--text)}
+.paste-btn{display:flex;align-items:center;gap:8px;padding:9px 14px 9px 18px;font-size:13px;font-family:sans-serif;font-weight:600;border:none;background:transparent;color:inherit;cursor:pointer;flex:1;min-width:0}
+.paste-btn-icon{flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.paste-btn-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.paste-clear{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;border:none;border-left:1.5px dashed var(--border);background:transparent;color:inherit;cursor:pointer;font-size:13px;line-height:1;transition:color .15s,background .15s,border-color .15s}
+.paste-pill:hover .paste-clear{border-left-color:var(--accent)}
+.paste-clear:hover{color:#e05c5c;background:rgba(224,92,92,0.08)}
+.paste-chooser{margin-top:12px;padding:14px 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:none;flex-direction:column;gap:10px}
+.paste-chooser.visible{display:flex}
+.paste-chooser-title{font-size:13px;font-weight:700;font-family:sans-serif;color:var(--text)}
+.paste-chooser-subtitle{font-size:12px;color:var(--text-muted);font-family:sans-serif;margin-top:-4px}
+.paste-chooser-options{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.paste-option{flex:1;min-width:200px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg1);cursor:pointer;text-align:left;font-family:sans-serif;transition:border-color .15s,background .15s}
+.paste-option:hover{border-color:var(--accent);background:var(--surface)}
+.paste-option-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
+.paste-option-desc{font-size:11px;color:var(--text-muted);line-height:1.4}
+.paste-chooser-cancel{align-self:flex-end;padding:6px 12px;font-size:12px;font-family:sans-serif;color:var(--text-muted);background:none;border:none;cursor:pointer}
+.paste-chooser-cancel:hover{color:var(--text)}
 .chk{width:20px;height:20px;border-radius:4px;border:1.5px solid var(--border);background:transparent;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
 .chk.checked{background:var(--accent);border-color:var(--accent)}
 .chk.checked::after{content:"\2713";color:#fff;font-size:11px;font-weight:700}
@@ -115,8 +150,7 @@ tbody tr.is-read .title-series{opacity:.6}
 .genre-book-info{flex:1;display:flex;flex-direction:column;min-width:0}
 .genre-book-info .genre-book-title{flex:none}
 .genre-book-title{flex:1;font-size:14px;color:var(--text)}
-.genre-book-row.is-read .genre-book-title{text-decoration:line-through;color:var(--text-muted)}
-.genre-book-row.is-read .genre-book-series{text-decoration:none}
+.genre-book-row.is-read .genre-book-title{color:var(--text-muted)}
 .genre-book-author{font-size:12px;color:var(--text-muted);font-family:sans-serif;white-space:nowrap}
 .genre-book-pages{font-size:12px;color:var(--text-muted);font-family:sans-serif;min-width:44px;text-align:right}
 .add-section{margin-top:32px}
@@ -199,11 +233,11 @@ tbody tr.is-read .title-series{opacity:.6}
 .tpsr{display:flex;gap:6px;align-items:center;margin-top:6px}
 .tpok{font-size:12px;padding:5px 12px;border:none;border-radius:6px;background:var(--accent);color:#fff;cursor:pointer;font-family:sans-serif;font-weight:600}
 .tpcl{font-size:12px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-muted);cursor:pointer;font-family:sans-serif}
-body.card-frosted .stat,body.card-frosted .table-wrap,body.card-frosted .add-form,body.card-frosted .genre-book-row{background:var(--surface-glass)!important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+body.card-frosted .stat,body.card-frosted .table-wrap,body.card-frosted .add-form,body.card-frosted .paste-chooser,body.card-frosted .genre-book-row{background:var(--surface-glass)!important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 body.card-frosted tbody tr{background:transparent!important}
 body.card-frosted tbody tr:hover td{background:rgba(255,255,255,0.05)!important}
 body.card-frosted .filter-row input,body.card-frosted .filter-row select,body.card-frosted .form-grid input,body.card-frosted .form-grid textarea,body.card-frosted .custom-genre-input{background:var(--surface-glass)!important}
-body.card-shadowed .stat,body.card-shadowed .table-wrap,body.card-shadowed .add-form{box-shadow:0 6px 28px var(--accent-shadow)}
+body.card-shadowed .stat,body.card-shadowed .table-wrap,body.card-shadowed .add-form,body.card-shadowed .paste-chooser{box-shadow:0 6px 28px var(--accent-shadow)}
 
 /* Currently Reading */
 tbody tr.is-reading>td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
@@ -246,6 +280,7 @@ tbody tr.is-reading>td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="stat"><div class="stat-label">Read</div><div class="stat-val" id="stat-read">0</div></div>
     <div class="stat"><div class="stat-label">To go</div><div class="stat-val" id="stat-togo">0</div></div>
     <div class="stat"><div class="stat-label">Pages</div><div class="stat-val" id="stat-pages">0</div></div>
+    <div class="stat"><div class="stat-label">Pages Read</div><div class="stat-val" id="stat-pages-read">0</div></div>
   </div>
   <div class="progress-wrap">
     <div class="progress-header"><span>Progress</span><span id="pct-label">0%</span></div>
@@ -283,10 +318,39 @@ tbody tr.is-reading>td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   </div>
   <div id="tab-genre" class="hidden"><div class="genre-grid" id="genre-grid"></div></div>
   <div class="add-section">
-    <button class="add-toggle-btn" onclick="toggleAddForm()">
-      <span id="add-icon" style="font-size:18px;line-height:1">+</span>
-      <span id="add-label">Add a book</span>
-    </button>
+    <div class="add-row">
+      <button class="add-toggle-btn" onclick="toggleAddForm()">
+        <span id="add-icon" style="font-size:18px;line-height:1">+</span>
+        <span id="add-label">Add a book</span>
+      </button>
+      <div class="paste-pill" id="paste-pill">
+        <button class="paste-btn" onclick="openPasteChooser()" title="Paste copied book">
+          <span class="paste-btn-icon" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3.5" y="2.5" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+              <rect x="5.5" y="4.5" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="var(--surface)"/>
+            </svg>
+          </span>
+          <span class="paste-btn-label" id="paste-btn-label">Paste book</span>
+        </button>
+        <button class="paste-clear" onclick="clearClipboard()" title="Clear clipboard" aria-label="Clear clipboard">&#10005;</button>
+      </div>
+    </div>
+    <div class="paste-chooser" id="paste-chooser">
+      <p class="paste-chooser-title">Paste <span id="paste-chooser-title-name"></span></p>
+      <p class="paste-chooser-subtitle">Choose what to bring along:</p>
+      <div class="paste-chooser-options">
+        <button class="paste-option" onclick="confirmPaste('inherit')">
+          <div class="paste-option-name">Inherit</div>
+          <div class="paste-option-desc">Keep my read status, rating, favorite, and reading sessions.</div>
+        </button>
+        <button class="paste-option" onclick="confirmPaste('reset')">
+          <div class="paste-option-name">Reset</div>
+          <div class="paste-option-desc">Just the book — start fresh, no progress carried over.</div>
+        </button>
+      </div>
+      <button class="paste-chooser-cancel" onclick="closePasteChooser()">Cancel</button>
+    </div>
     <div class="add-form hidden" id="add-form">
       <p class="form-title-text">New book</p>
       <div class="form-grid">
@@ -364,9 +428,33 @@ tbody tr.is-reading>td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     </div>
   </div>
 </div>
+<div class="modal-overlay hidden" id="details-modal">
+  <div class="modal" style="max-width:560px">
+    <p class="modal-title">Edit Book Details</p>
+    <p class="modal-subtitle" id="details-modal-subtitle"></p>
+    <div class="form-grid">
+      <input class="span-full" type="text" id="d-title"  placeholder="Title"/>
+      <input class="span-full" type="text" id="d-author" placeholder="Author"/>
+      <input type="number" id="d-pages"  placeholder="Page count" min="1"/>
+      <input type="text"   id="d-series" placeholder="Series # (optional, e.g. 1, 2, Prequel)"/>
+      <input class="span-full" type="text" id="d-series-name" placeholder="Series name (optional, e.g. Harry Potter)"/>
+      <textarea class="span-full" id="d-summary" placeholder="Summary / thoughts (optional)"></textarea>
+    </div>
+    <p class="genre-pick-label">Genre - pick an existing one or type a new one:</p>
+    <div class="genre-pick-pills" id="d-genre-pills"></div>
+    <input class="custom-genre-input" type="text" id="d-custom-genre" placeholder="Or type a new genre" oninput="onDetailsCustomGenreInput()" style="margin-top:8px"/>
+    <div class="genre-preview hidden" id="d-genre-preview">Will be tagged as: <span id="d-genre-preview-tag"></span></div>
+    <p class="form-error hidden" id="d-form-error"></p>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeDetailsModal()">Cancel</button>
+      <button class="modal-save" onclick="saveDetailsModal()">Save changes</button>
+    </div>
+  </div>
+</div>
+<div class="row-menu" id="row-menu"></div>
 <div class="toast" id="toast">
   <span id="toast-msg"></span>
-  <button class="toast-undo" onclick="undoDelete()">Undo</button>
+  <button class="toast-undo" id="toast-undo" onclick="undoDelete()">Undo</button>
 </div>
 <script>
 // ── Seed data (first-time default for list 1) ────────────────────────────────
@@ -398,6 +486,9 @@ var lists=[], activeId="", books=[], readSet=new Set();
 var sortKey="title",sortDir=1,activeGenreFilter="",currentTab="list";
 var selectedFormGenre="",modalIdx=-1,deletedBook=null,deletedIdx=-1,toastTimer=null;
 var delBuiltins=[],customPresets=[],editCpIdx=-1;
+// State for the new ⋯ menu, edit-details modal, and copy/paste clipboard.
+var rowMenuIdx=-1, detailsIdx=-1, detailsSelectedGenre="";
+var clipboardBook=null;
 
 // ── ID generator ──────────────────────────────────────────────────────────────
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
@@ -470,7 +561,7 @@ function switchList(id){
   if(id===activeId)return;
   saveCurrentList();
   hideToast();deletedBook=null;deletedIdx=-1;
-  selectedFormGenre="";modalIdx=-1;closeModal();closeSM();
+  selectedFormGenre="";modalIdx=-1;closeModal();closeSM();closeDetailsModal();closeRowMenu();closePasteChooser();
   // Reset UI state
   activeGenreFilter="";sortKey="title";sortDir=1;currentTab="list";
   document.getElementById("search-input").value="";
@@ -493,6 +584,7 @@ function switchList(id){
   renderTopBar();
   document.getElementById("list-name-input").value=activeList().name;
   updateStats();renderFilterPills();renderGenreDropdown();renderGenrePickPills();renderTable();
+  closeRowMenu();closePasteChooser();renderPasteButton();
   if(document.getElementById("theme-panel").classList.contains("open")){syncPk(curTheme());renderBG();renderCPL();}
 }
 
@@ -502,7 +594,7 @@ function activeList(){return lists.find(function(l){return l.id===activeId;})||l
 function createList(){
   saveCurrentList();
   hideToast();deletedBook=null;deletedIdx=-1;
-  selectedFormGenre="";modalIdx=-1;closeModal();closeSM();
+  selectedFormGenre="";modalIdx=-1;closeModal();closeSM();closeDetailsModal();closeRowMenu();closePasteChooser();
   if(!document.getElementById("add-form").classList.contains("hidden"))toggleAddForm();
   ["f-title","f-author","f-pages","f-series","f-series-name","f-summary","f-custom-genre"].forEach(function(id){document.getElementById(id).value="";});
   document.getElementById("genre-preview").classList.add("hidden");
@@ -532,7 +624,7 @@ function deleteList(id){
   if(lists.length<=1){showToast("Can't delete the only list");return;}
   var name=lists.find(function(l){return l.id===id;}).name;
   if(!confirm('Delete "'+name+'"? This cannot be undone.')){return;}
-  hideToast();deletedBook=null;deletedIdx=-1;closeSM();closeModal();
+  hideToast();deletedBook=null;deletedIdx=-1;closeSM();closeModal();closeDetailsModal();closeRowMenu();closePasteChooser();
   localStorage.removeItem(listKey(id));
   localStorage.removeItem(readKey(id));
   lists=lists.filter(function(l){return l.id!==id;});
@@ -609,13 +701,20 @@ function setMyRating(idx,val){books[idx].myRating=books[idx].myRating===val?0:va
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
 function updateStats(){
-  var total=books.length,read=0,pages=0;
-  for(var i=0;i<books.length;i++){if(readSet.has(i))read++;pages+=books[i].pages;}
+  var total=books.length, read=0, pages=0, pagesRead=0;
+  for(var i=0;i<books.length;i++){
+    pages += books[i].pages;
+    if(readSet.has(i)){
+      read++;
+      pagesRead += books[i].pages;
+    }
+  }
   var pct=total?Math.round(read/total*100):0;
   document.getElementById("stat-total").textContent=total;
   document.getElementById("stat-read").textContent=read;
   document.getElementById("stat-togo").textContent=total-read;
   document.getElementById("stat-pages").textContent=pages.toLocaleString();
+  document.getElementById("stat-pages-read").textContent=pagesRead.toLocaleString();
   document.getElementById("pct-label").textContent=pct+"%";
   document.getElementById("progress-fill").style.width=pct+"%";
 }
@@ -692,7 +791,7 @@ function renderTable(){
   var rows="";
   list.forEach(function(b){
     var isRead=readSet.has(b.idx);
-    var sumText=b.summary?esc(b.summary):'<span class="summary-no-text">No summary added yet — click ✎ to add one.</span>';
+    var sumText=b.summary?esc(b.summary):'<span class="summary-no-text">No summary added yet — open the ⋯ menu to add one.</span>';
     var rowClass=(isRead?'is-read':'')+(b.isReading?' is-reading':'');
     // Series can render two different ways:
     //   - inline "(1)" tag, when only seriesOrder is set (legacy data)
@@ -718,9 +817,8 @@ function renderTable(){
       +'<td>'+genreTagHTML(b.genre)+'</td>'
       +'<td><div class="actions-cell">'
         +'<button class="reading-btn'+(b.isReading?' on':'')+'" onclick="toggleReading('+b.idx+')" title="Currently reading">&#9654; Reading</button>'
-        +'<button class="icon-btn edit-btn" title="Edit summary" onclick="openModal('+b.idx+')">&#9998;</button>'
         +'<button class="icon-btn" style="font-size:15px" title="Reading sessions" onclick="openSM('+b.idx+')">&#128197;</button>'
-        +'<button class="icon-btn del-btn" title="Delete" onclick="deleteBook('+b.idx+')">&#10005;</button>'
+        +'<button class="icon-btn menu-btn" title="More" onclick="openRowMenu(event,'+b.idx+')">&#8943;</button>'
       +'</div></td></tr>';
   });
   tbody.innerHTML=rows;
@@ -733,7 +831,7 @@ function showTT(idx,span){
   clearTimeout(_ttTimer);
   var t=document.getElementById("global-tooltip");if(!t)return;
   var b=books[idx];if(!b)return;
-  var sumText=b.summary?esc(b.summary):'<span class="summary-no-text">No summary added yet — click ✎ to add one.</span>';
+  var sumText=b.summary?esc(b.summary):'<span class="summary-no-text">No summary added yet — open the ⋯ menu to add one.</span>';
   var st=seriesText(b);
   var seriesHeader=st?'<div class="summary-tooltip-series">'+esc(st)+'</div>':'';
   t.innerHTML='<div class="summary-tooltip-title">'+esc(b.title)+'</div>'+seriesHeader+sumText;
@@ -909,6 +1007,249 @@ function saveModal(){
 }
 document.getElementById("edit-modal").addEventListener("click",function(e){if(e.target===this)closeModal();});
 
+// ── Row ⋯ menu ────────────────────────────────────────────────────────────────
+// Replaces the old per-row ✎ and ✖ buttons. Positioned with fixed
+// coordinates relative to the click target so it isn't clipped by the
+// table's overflow:auto wrapper.
+function openRowMenu(ev,idx){
+  ev.stopPropagation();
+  rowMenuIdx=idx;
+  var menu=document.getElementById("row-menu");
+  menu.innerHTML=''
+    +'<button class="row-menu-item" onclick="rowMenuAction(\'edit\')">'
+      +'<span class="row-menu-icon">&#9998;</span><span>Edit book details</span>'
+    +'</button>'
+    +'<button class="row-menu-item" onclick="rowMenuAction(\'copy\')">'
+      +'<span class="row-menu-icon">'
+        +'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">'
+          +'<rect x="3.5" y="2.5" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/>'
+          +'<rect x="5.5" y="4.5" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="var(--surface)"/>'
+        +'</svg>'
+      +'</span><span>Copy book</span>'
+    +'</button>'
+    +'<div class="row-menu-divider"></div>'
+    +'<button class="row-menu-item danger" onclick="rowMenuAction(\'delete\')">'
+      +'<span class="row-menu-icon">&#10005;</span><span>Delete</span>'
+    +'</button>';
+  // Position the menu near the click target, then clamp into the viewport.
+  var btn=ev.currentTarget;
+  var r=btn.getBoundingClientRect();
+  menu.classList.add("visible");
+  var menuW=menu.offsetWidth, menuH=menu.offsetHeight;
+  var top=r.bottom+4, left=r.right-menuW;
+  if(left<8) left=8;
+  if(left+menuW>window.innerWidth-8) left=window.innerWidth-menuW-8;
+  if(top+menuH>window.innerHeight-8) top=r.top-menuH-4;
+  menu.style.top=top+"px";
+  menu.style.left=left+"px";
+}
+function closeRowMenu(){
+  document.getElementById("row-menu").classList.remove("visible");
+  rowMenuIdx=-1;
+}
+function rowMenuAction(action){
+  var idx=rowMenuIdx;
+  closeRowMenu();
+  if(idx<0) return;
+  if(action==="edit")        openDetailsModal(idx);
+  else if(action==="copy")   copyBook(idx);
+  else if(action==="delete") deleteBook(idx);
+}
+// Close the menu on any outside click or Escape.
+document.addEventListener("click",function(e){
+  var menu=document.getElementById("row-menu");
+  if(!menu.classList.contains("visible")) return;
+  if(menu.contains(e.target)) return;
+  closeRowMenu();
+});
+document.addEventListener("keydown",function(e){
+  if(e.key!=="Escape") return;
+  closeRowMenu();
+  // Only close the topmost open thing — modals first, then chooser.
+  if(!document.getElementById("details-modal").classList.contains("hidden")){
+    closeDetailsModal();
+  } else if(document.getElementById("paste-chooser").classList.contains("visible")){
+    closePasteChooser();
+  }
+});
+
+// ── Edit Book Details modal ───────────────────────────────────────────────────
+// Opens a pre-filled form mirroring the Add Book form, writes back to
+// the existing book on save (no new entry created).
+function openDetailsModal(idx){
+  detailsIdx=idx;
+  var b=books[idx];
+  document.getElementById("d-title").value       = b.title || "";
+  document.getElementById("d-author").value      = b.author || "";
+  document.getElementById("d-pages").value       = b.pages || "";
+  document.getElementById("d-series").value      = b.seriesOrder || "";
+  document.getElementById("d-series-name").value = b.seriesName || "";
+  document.getElementById("d-summary").value     = b.summary || "";
+  // If the book's genre matches a known one, treat it as a selected pill;
+  // otherwise put it in the custom-genre input so it stays editable.
+  if(allGenres().indexOf(b.genre)>=0){
+    detailsSelectedGenre = b.genre;
+    document.getElementById("d-custom-genre").value = "";
+  } else {
+    detailsSelectedGenre = "";
+    document.getElementById("d-custom-genre").value = b.genre || "";
+  }
+  document.getElementById("details-modal-subtitle").textContent = b.title;
+  clearDetailsError();
+  renderDetailsGenrePills();
+  updateDetailsGenrePreview();
+  document.getElementById("details-modal").classList.remove("hidden");
+}
+function closeDetailsModal(){
+  document.getElementById("details-modal").classList.add("hidden");
+  detailsIdx=-1;
+  detailsSelectedGenre="";
+}
+function renderDetailsGenrePills(){
+  document.getElementById("d-genre-pills").innerHTML=allGenres().map(function(g){
+    var c=genreColor(g), on=detailsSelectedGenre===g;
+    return '<button type="button" class="genre-pick-pill" onclick="selectDetailsGenre(\''+g.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="background:'+(on?c:c+'1a')+';color:'+(on?'#fff':c)+';border-color:'+c+'55">'+esc(g)+'</button>';
+  }).join("");
+}
+function selectDetailsGenre(g){
+  detailsSelectedGenre=g;
+  document.getElementById("d-custom-genre").value="";
+  renderDetailsGenrePills();
+  updateDetailsGenrePreview();
+  clearDetailsError();
+}
+function onDetailsCustomGenreInput(){
+  detailsSelectedGenre="";
+  renderDetailsGenrePills();
+  updateDetailsGenrePreview();
+  clearDetailsError();
+}
+function updateDetailsGenrePreview(){
+  var custom=document.getElementById("d-custom-genre").value.trim();
+  var genre=custom||detailsSelectedGenre;
+  var prev=document.getElementById("d-genre-preview"), tag=document.getElementById("d-genre-preview-tag");
+  if(genre){
+    var c=genreColor(genre);
+    tag.innerHTML='<span class="genre-tag" style="background:'+c+'1a;color:'+c+';border:1px solid '+c+'44">'+esc(genre)+'</span>';
+    prev.classList.remove("hidden");
+  } else {
+    prev.classList.add("hidden");
+  }
+}
+function clearDetailsError(){var e=document.getElementById("d-form-error");e.textContent="";e.classList.add("hidden");}
+function showDetailsError(m){var e=document.getElementById("d-form-error");e.textContent=m;e.classList.remove("hidden");}
+function saveDetailsModal(){
+  if(detailsIdx<0) return;
+  var title       = document.getElementById("d-title").value.trim();
+  var author      = document.getElementById("d-author").value.trim();
+  var pages       = parseInt(document.getElementById("d-pages").value);
+  var seriesOrder = document.getElementById("d-series").value.trim();
+  var seriesName  = document.getElementById("d-series-name").value.trim();
+  var summary     = document.getElementById("d-summary").value.trim();
+  var genre       = document.getElementById("d-custom-genre").value.trim() || detailsSelectedGenre;
+
+  if(!title)                  return showDetailsError("Title is required.");
+  if(!author)                 return showDetailsError("Author is required.");
+  if(isNaN(pages) || pages<1) return showDetailsError("Enter a valid page count.");
+  if(!genre)                  return showDetailsError("Please select or type a genre.");
+
+  // Mutate in place — preserves myRating, isFav, isReading, sessions, and
+  // any other fields not exposed in the form.
+  var b=books[detailsIdx];
+  b.title=title; b.author=author; b.pages=pages; b.genre=genre;
+  b.seriesOrder=seriesOrder; b.seriesName=seriesName; b.summary=summary;
+
+  saveCurrentList();
+  closeDetailsModal();
+  updateStats();
+  renderFilterPills();
+  renderGenreDropdown();
+  renderGenrePickPills();
+  if(currentTab==="list") renderTable();
+  else                    renderGenreTab();
+}
+document.getElementById("details-modal").addEventListener("click",function(e){if(e.target===this)closeDetailsModal();});
+
+// ── Copy / Paste ──────────────────────────────────────────────────────────────
+// In-app clipboard. clipboardBook holds a snapshot of a book; the paste
+// button only renders when this is set. The chooser lets the user keep
+// or reset their personal data (read status, rating, favorite, sessions).
+function copyBook(idx){
+  var b=books[idx];
+  // Snapshot all fields, plus whether this book was marked read in the
+  // SOURCE list (so Inherit can replay that on the destination).
+  clipboardBook = {
+    title: b.title, author: b.author, pages: b.pages, genre: b.genre,
+    summary: b.summary || "",
+    seriesOrder: b.seriesOrder || "",
+    seriesName: b.seriesName || "",
+    optional: !!b.optional,
+    myRating: b.myRating || 0,
+    isFav: !!b.isFav,
+    isReading: !!b.isReading,
+    sessions: (b.sessions || []).map(function(s){return Object.assign({},s);}),
+    wasRead: readSet.has(idx)
+  };
+  renderPasteButton();
+  showToast('"'+b.title+'" copied — switch lists to paste.');
+}
+function renderPasteButton(){
+  var pill=document.getElementById("paste-pill"), label=document.getElementById("paste-btn-label");
+  if(clipboardBook){
+    label.textContent = "Paste: " + clipboardBook.title;
+    pill.classList.add("visible");
+  } else {
+    pill.classList.remove("visible");
+    closePasteChooser();
+  }
+}
+function clearClipboard(){
+  if(!clipboardBook) return;
+  clipboardBook=null;
+  renderPasteButton();
+  showToast("Clipboard cleared");
+}
+function openPasteChooser(){
+  if(!clipboardBook) return;
+  document.getElementById("paste-chooser-title-name").textContent = '"' + clipboardBook.title + '"';
+  document.getElementById("paste-chooser").classList.add("visible");
+}
+function closePasteChooser(){
+  document.getElementById("paste-chooser").classList.remove("visible");
+}
+function confirmPaste(mode){
+  if(!clipboardBook) return;
+  var c=clipboardBook;
+  var newBook = {
+    title: c.title, author: c.author, pages: c.pages, genre: c.genre,
+    summary: c.summary, optional: c.optional,
+    seriesOrder: c.seriesOrder, seriesName: c.seriesName,
+    myRating:   mode==="inherit" ? c.myRating  : 0,
+    isFav:      mode==="inherit" ? c.isFav     : false,
+    isReading:  mode==="inherit" ? c.isReading : false,
+    sessions:   mode==="inherit" ? c.sessions.map(function(s){return Object.assign({},s);}) : []
+  };
+  // Insert at the top of the array so it's findable when no sort is applied.
+  books.unshift(newBook);
+  // readSet stores array indexes — every existing entry shifts up by one.
+  var shifted=new Set();
+  readSet.forEach(function(i){shifted.add(i+1);});
+  if(mode==="inherit" && c.wasRead) shifted.add(0);
+  readSet=shifted;
+
+  saveCurrentList();
+  updateStats();
+  renderFilterPills();
+  renderGenreDropdown();
+  renderGenrePickPills();
+  if(currentTab==="list") renderTable();
+  else                    renderGenreTab();
+
+  // Clipboard stays loaded — paste again into another list, or click ✕ to clear.
+  closePasteChooser();
+  showToast('Pasted "'+c.title+'" '+(mode==="inherit"?"with progress":"as fresh"));
+}
+
 // ── Delete + undo ─────────────────────────────────────────────────────────────
 function deleteBook(idx){
   // Stash a copy of the book so undoDelete() can restore it.
@@ -927,7 +1268,7 @@ function deleteBook(idx){
 
   saveCurrentList();updateStats();renderFilterPills();renderGenreDropdown();
   currentTab==="list" ? renderTable() : renderGenreTab();
-  showToast('"'+deletedBook.title+'" removed');
+  showToast('"'+deletedBook.title+'" removed', true);
 }
 
 function undoDelete(){
@@ -946,11 +1287,19 @@ function undoDelete(){
   currentTab==="list" ? renderTable() : renderGenreTab();
   deletedBook=null;deletedIdx=-1;hideToast();
 }
-function showToast(msg){
+function showToast(msg, withUndo){
   clearTimeout(toastTimer);
   document.getElementById("toast-msg").textContent=msg;
+  // Only show the Undo button for delete toasts.
+  document.getElementById("toast-undo").style.display = withUndo ? "" : "none";
   document.getElementById("toast").classList.add("visible");
-  toastTimer=setTimeout(function(){hideToast();deletedBook=null;deletedIdx=-1;},6000);
+  // Only the delete toast manages the deletedBook lifecycle. Other toasts
+  // (copy, paste, etc.) should not blow away a pending undo state.
+  if(withUndo){
+    toastTimer=setTimeout(function(){hideToast();deletedBook=null;deletedIdx=-1;},6000);
+  } else {
+    toastTimer=setTimeout(function(){hideToast();},3000);
+  }
 }
 function hideToast(){document.getElementById("toast").classList.remove("visible");clearTimeout(toastTimer);}
 
@@ -1169,6 +1518,7 @@ loadAll();
 renderTopBar();
 document.getElementById("list-name-input").value=activeList().name;
 updateStats();renderFilterPills();renderGenreDropdown();renderGenrePickPills();renderTable();
+renderPasteButton();
 </script>
 <div id="global-tooltip"></div>
 </body>
