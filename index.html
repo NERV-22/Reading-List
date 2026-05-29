@@ -43,6 +43,14 @@ h1{font-size:28px;font-weight:700;letter-spacing:-0.5px}
 .progress-header span:last-child{color:var(--accent);font-weight:600}
 .progress-track{height:7px;background:var(--border);border-radius:99px;overflow:hidden}
 .progress-fill{height:100%;background:var(--accent);border-radius:99px;transition:width .4s ease}
+.storage-wrap{margin-top:14px}
+.storage-fill{background:var(--accent);transition:width .4s ease,background .25s ease}
+.storage-fill.warn{background:#f59e0b}
+.storage-fill.danger{background:#e05c5c}
+.storage-pct{color:var(--accent);transition:color .25s ease}
+.storage-pct.warn{color:#f59e0b}
+.storage-pct.danger{color:#e05c5c}
+.storage-detail{margin-top:5px;font-size:11px;font-family:sans-serif;color:var(--text-muted);text-align:right;letter-spacing:.3px}
 .tabs{display:flex;border-bottom:1.5px solid var(--border);margin-bottom:22px}
 .tab-btn{padding:8px 18px;font-size:13px;font-family:sans-serif;font-weight:600;color:var(--text-muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;margin-bottom:-1.5px;transition:color .15s}
 .tab-btn.active{color:var(--text);border-bottom-color:var(--accent)}
@@ -296,6 +304,14 @@ tbody tr.is-reading>td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="progress-header"><span>Progress</span><span id="pct-label">0%</span></div>
     <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
   </div>
+  <div class="progress-wrap storage-wrap">
+    <div class="progress-header">
+      <span>Storage</span>
+      <span class="storage-pct" id="storage-pct">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill storage-fill" id="storage-fill" style="width:0%"></div></div>
+    <div class="storage-detail" id="storage-detail">0 KB used</div>
+  </div>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('list')">All Books</button>
     <button class="tab-btn" onclick="switchTab('genre')">By Genre</button>
@@ -478,6 +494,114 @@ tbody tr.is-reading>td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   <button class="toast-undo" id="toast-undo" onclick="undoDelete()">Undo</button>
 </div>
 <script>
+// ── Storage layer (IndexedDB with localStorage-compatible API) ────────────────
+// Backed by IndexedDB so we get ~1+ GB of room instead of localStorage's 5 MB.
+// An in-memory cache mirrors the entire keyspace, so reads/writes from the
+// rest of the app stay synchronous (no need to await every save). Writes
+// fire-and-forget into IndexedDB in the background.
+var storage = (function(){
+  var DB_NAME="rl_db", DB_VERSION=1, STORE="kv";
+  var db=null, cache={}, ready=false;
+
+  function openDB(){
+    return new Promise(function(resolve,reject){
+      var req=indexedDB.open(DB_NAME,DB_VERSION);
+      req.onupgradeneeded=function(e){
+        var d=e.target.result;
+        if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE);
+      };
+      req.onsuccess=function(e){db=e.target.result; resolve();};
+      req.onerror=function(){reject(req.error);};
+    });
+  }
+  function loadAll(){
+    return new Promise(function(resolve,reject){
+      var tx=db.transaction(STORE,"readonly"), store=tx.objectStore(STORE);
+      var req=store.openCursor();
+      req.onsuccess=function(e){
+        var c=e.target.result;
+        if(c){ cache[c.key]=c.value; c.continue(); }
+        else { resolve(); }
+      };
+      req.onerror=function(){reject(req.error);};
+    });
+  }
+  function writeKey(k,v){
+    if(!db) return;
+    try{
+      var tx=db.transaction(STORE,"readwrite");
+      tx.objectStore(STORE).put(v,k);
+    }catch(e){ /* swallow — cache is the source of truth for this session */ }
+  }
+  function deleteKey(k){
+    if(!db) return;
+    try{
+      var tx=db.transaction(STORE,"readwrite");
+      tx.objectStore(STORE).delete(k);
+    }catch(e){}
+  }
+  // One-time migration: if IndexedDB is empty AND localStorage has Reading
+  // List keys, copy them across. Leaves localStorage data in place as a
+  // safety net — we only read from it on this first run.
+  function migrateFromLocalStorage(){
+    if(Object.keys(cache).length>0) return;  // already has data → already migrated
+    try{
+      var moved=0;
+      for(var i=0;i<localStorage.length;i++){
+        var k=localStorage.key(i);
+        if(!k) continue;
+        // Only migrate Reading List keys, not unrelated localStorage from other apps.
+        if(k.indexOf("rl_")!==0) continue;
+        var v=localStorage.getItem(k);
+        if(v!==null){ cache[k]=v; writeKey(k,v); moved++; }
+      }
+      if(moved>0) console.log("Reading List: migrated "+moved+" keys from localStorage to IndexedDB.");
+    }catch(e){ /* localStorage might not be accessible — that's fine */ }
+  }
+
+  return {
+    init: function(){
+      return openDB()
+        .then(loadAll)
+        .then(function(){ migrateFromLocalStorage(); ready=true; })
+        .catch(function(err){
+          console.error("Reading List: IndexedDB init failed, falling back to localStorage.", err);
+          // Fallback: populate cache from localStorage so the app still works.
+          try{
+            for(var i=0;i<localStorage.length;i++){
+              var k=localStorage.key(i);
+              if(k && k.indexOf("rl_")===0) cache[k]=localStorage.getItem(k);
+            }
+          }catch(e){}
+          ready=true;
+        });
+    },
+    getItem: function(k){ return cache.hasOwnProperty(k) ? cache[k] : null; },
+    setItem: function(k,v){
+      v=String(v);
+      cache[k]=v;
+      writeKey(k,v);
+      // Belt-and-suspenders fallback for users who clear IndexedDB but not
+      // localStorage: keep a small mirror until storage pressure builds up.
+      try{ localStorage.setItem(k,v); }catch(e){ /* quota — ignore */ }
+    },
+    removeItem: function(k){
+      delete cache[k];
+      deleteKey(k);
+      try{ localStorage.removeItem(k); }catch(e){}
+    },
+    // Estimate the total bytes used across all Reading List keys.
+    // Each character ≈ 2 bytes in UTF-16 (how browsers internally store strings).
+    estimateBytes: function(){
+      var total=0;
+      for(var k in cache){
+        if(cache.hasOwnProperty(k)) total += (k.length + cache[k].length) * 2;
+      }
+      return total;
+    }
+  };
+})();
+
 // ── Seed data (first-time default for list 1) ────────────────────────────────
 var SEED=[];
 
@@ -528,20 +652,20 @@ var ICONS = {
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 
 // ── Meta persistence ──────────────────────────────────────────────────────────
-function saveMeta(){localStorage.setItem(LS_META,JSON.stringify({lists:lists,activeId:activeId}));}
+function saveMeta(){storage.setItem(LS_META,JSON.stringify({lists:lists,activeId:activeId}));}
 function listKey(id){return "rl_books_"+id;}
 function readKey(id){return "rl_read_"+id;}
 
 function saveCurrentList(){
   if(!activeId)return;
-  localStorage.setItem(listKey(activeId),JSON.stringify(books));
-  localStorage.setItem(readKey(activeId),JSON.stringify([...readSet]));
+  storage.setItem(listKey(activeId),JSON.stringify(books));
+  storage.setItem(readKey(activeId),JSON.stringify([...readSet]));
 }
 
 function loadListData(id){
   try{
-    var b=localStorage.getItem(listKey(id));
-    var r=localStorage.getItem(readKey(id));
+    var b=storage.getItem(listKey(id));
+    var r=storage.getItem(readKey(id));
     books=b?JSON.parse(b):(id===lists[0].id?SEED.map(function(x){return Object.assign({},x);}): []);
     readSet=r?new Set(JSON.parse(r)):new Set();
     // Backfill defaults for fields added in later versions, so old data
@@ -565,7 +689,7 @@ function loadListData(id){
 
 function loadAll(){
   try{
-    var raw=localStorage.getItem(LS_META);
+    var raw=storage.getItem(LS_META);
     if(raw){
       var m=JSON.parse(raw);
       lists=m.lists||[];
@@ -578,10 +702,10 @@ function loadAll(){
     lists=[{id:firstId,name:"New List"}];
     activeId=firstId;
     // Migrate from old single-list storage keys
-    var oldB=localStorage.getItem("rl_template_bv5"),oldR=localStorage.getItem("rl_template_rv5");
+    var oldB=storage.getItem("rl_template_bv5"),oldR=storage.getItem("rl_template_rv5");
     if(oldB){
-      localStorage.setItem(listKey(firstId),oldB);
-      if(oldR)localStorage.setItem(readKey(firstId),oldR);
+      storage.setItem(listKey(firstId),oldB);
+      if(oldR)storage.setItem(readKey(firstId),oldR);
     }
     saveMeta();
   }
@@ -659,8 +783,8 @@ function deleteList(id){
   var name=lists.find(function(l){return l.id===id;}).name;
   if(!confirm('Delete "'+name+'"? This cannot be undone.')){return;}
   hideToast();deletedBook=null;deletedIdx=-1;closeSM();closeModal();closeDetailsModal();closeRowMenu();closePasteChooser();
-  localStorage.removeItem(listKey(id));
-  localStorage.removeItem(readKey(id));
+  storage.removeItem(listKey(id));
+  storage.removeItem(readKey(id));
   lists=lists.filter(function(l){return l.id!==id;});
   if(activeId===id){
     activeId=lists[0].id;
@@ -751,6 +875,50 @@ function updateStats(){
   document.getElementById("stat-pages-read").textContent=pagesRead.toLocaleString();
   document.getElementById("pct-label").textContent=pct+"%";
   document.getElementById("progress-fill").style.width=pct+"%";
+  updateStorageBar();
+}
+
+// Format a byte count as KB or MB depending on size.
+function formatBytes(b){
+  if(b < 1024)             return b + " B";
+  if(b < 1024*1024)        return (b/1024).toFixed(b<10240 ? 1 : 0) + " KB";
+  return (b/(1024*1024)).toFixed(b<10*1024*1024 ? 2 : 1) + " MB";
+}
+
+// Estimate the storage cap. IndexedDB grants ~60% of free disk; we ask
+// navigator.storage.estimate() for a real number when available, falling
+// back to a conservative 1 GB if not.
+var _storageCap = 1024*1024*1024;  // 1 GB default
+function refreshStorageCap(){
+  if(navigator.storage && navigator.storage.estimate){
+    navigator.storage.estimate().then(function(e){
+      if(e && e.quota){
+        _storageCap = e.quota;
+        updateStorageBar();
+      }
+    }).catch(function(){});
+  }
+}
+
+function updateStorageBar(){
+  var used = storage.estimateBytes();
+  var cap = _storageCap;
+  var pct = cap ? (used/cap*100) : 0;
+  // Round to 1 decimal at low %, whole numbers at high %.
+  var pctText = pct < 1 ? pct.toFixed(2) + "%" : pct < 10 ? pct.toFixed(1) + "%" : Math.round(pct) + "%";
+  var pctEl   = document.getElementById("storage-pct");
+  var fillEl  = document.getElementById("storage-fill");
+  var detail  = document.getElementById("storage-detail");
+  if(!pctEl) return;
+  pctEl.textContent = pctText;
+  // Width capped at 100 for safety; show at least a sliver if any usage.
+  fillEl.style.width = Math.min(100, Math.max(used>0 ? 0.5 : 0, pct)) + "%";
+  detail.textContent = formatBytes(used) + " of " + formatBytes(cap);
+  // Color shifts: yellow at 75%, red at 90%.
+  fillEl.classList.remove("warn","danger");
+  pctEl.classList.remove("warn","danger");
+  if(pct >= 90){ fillEl.classList.add("danger"); pctEl.classList.add("danger"); }
+  else if(pct >= 75){ fillEl.classList.add("warn"); pctEl.classList.add("warn"); }
 }
 
 // ── Filter pills & dropdown ───────────────────────────────────────────────────
@@ -1449,8 +1617,8 @@ function delCP(i){if(!confirm('Delete "'+customPresets[i].name+'"?'))return;if(e
 function showSpForm(){document.getElementById("sp-form").classList.remove("hidden");document.getElementById("sp-name").value="";document.getElementById("sp-name").focus();}
 function hideSpForm(){document.getElementById("sp-form").classList.add("hidden");document.getElementById("sp-name").value="";}
 function confirmSp(){var n=document.getElementById("sp-name").value.trim();if(!n)return;customPresets.push({id:"cp_"+uid(),name:n,theme:Object.assign({},curTheme())});saveP();hideSpForm();renderCPL();showToast('"'+n+'" saved as preset');}
-function loadP(){try{var d=localStorage.getItem(LS_DEL);delBuiltins=d?JSON.parse(d):[];var c=localStorage.getItem(LS_CP);customPresets=c?JSON.parse(c):[];}catch(e){delBuiltins=[];customPresets=[];}}
-function saveP(){localStorage.setItem(LS_DEL,JSON.stringify(delBuiltins));localStorage.setItem(LS_CP,JSON.stringify(customPresets));}
+function loadP(){try{var d=storage.getItem(LS_DEL);delBuiltins=d?JSON.parse(d):[];var c=storage.getItem(LS_CP);customPresets=c?JSON.parse(c):[];}catch(e){delBuiltins=[];customPresets=[];}}
+function saveP(){storage.setItem(LS_DEL,JSON.stringify(delBuiltins));storage.setItem(LS_CP,JSON.stringify(customPresets));}
 
 
 // ── Favourites ────────────────────────────────────────────────────────────────
@@ -1542,12 +1710,19 @@ function downloadUpdate(){
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-loadP();
-loadAll();
-renderTopBar();
-document.getElementById("list-name-input").value=activeList().name;
-updateStats();renderFilterPills();renderGenreDropdown();renderGenrePickPills();renderTable();
-renderPasteButton();
+// ── Init ──────────────────────────────────────────────────────────────────────
+// Storage layer comes up first (opens IndexedDB, populates the in-memory
+// cache, migrates from localStorage if needed). Only then does the rest of
+// the app run, so every loadP() / loadAll() / etc. sees fully-populated data.
+storage.init().then(function(){
+  loadP();
+  loadAll();
+  renderTopBar();
+  document.getElementById("list-name-input").value=activeList().name;
+  updateStats();renderFilterPills();renderGenreDropdown();renderGenrePickPills();renderTable();
+  renderPasteButton();
+  refreshStorageCap();
+});
 </script>
 <div id="global-tooltip"></div>
 </body>
