@@ -319,7 +319,7 @@ tbody tr.is-reading>td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   <div id="tab-list">
     <div class="pills" id="filter-pills"></div>
     <div class="filter-row">
-      <input type="text" id="search-input" placeholder="Search title, author, or series..." oninput="applyFilters()"/>
+      <input type="text" id="search-input" placeholder="Search title, author, or series..." oninput="applyFiltersDebounced()"/>
       <select id="genre-select" onchange="syncPillFromSelect()"><option value="">All genres</option></select>
       <select id="read-select" onchange="applyFilters()">
         <option value="">All</option><option value="unread">Unread</option><option value="reading">&#9654; Reading</option><option value="read">Read</option>
@@ -855,7 +855,15 @@ function myStarsHTML(idx,mr){
   }
   return html+(mr>0?'<span class="my-rating-num">'+mr.toFixed(1)+'</span>':'<span class="no-rating">-</span>')+'</span>';
 }
-function setMyRating(idx,val){books[idx].myRating=books[idx].myRating===val?0:val;saveCurrentList();renderTable();}
+function setMyRating(idx,val){
+  books[idx].myRating = books[idx].myRating===val ? 0 : val;
+  saveCurrentList();
+  // If currently sorted by rating, the change reorders rows — full re-render.
+  // Otherwise update just this row's stars in place.
+  if(currentTab==="list" && sortKey!=="myRating") patchRowRating(idx);
+  else if(currentTab==="list") renderTable();
+  else renderGenreTab();
+}
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
 function updateStats(){
@@ -939,6 +947,14 @@ function renderGenreDropdown(){
 function syncPillFromSelect(){activeGenreFilter=document.getElementById("genre-select").value;renderFilterPills();applyFilters();}
 function setGenreFilter(g){activeGenreFilter=activeGenreFilter===g?"":g;document.getElementById("genre-select").value=activeGenreFilter;renderFilterPills();applyFilters();}
 function applyFilters(){renderFilterPills();renderTable();}
+// Wait 150ms after the user stops typing before re-rendering. At a few
+// hundred books the full re-render takes long enough to feel choppy on
+// every keystroke; this collapses bursts of typing into a single render.
+var _searchTimer=null;
+function applyFiltersDebounced(){
+  clearTimeout(_searchTimer);
+  _searchTimer=setTimeout(applyFilters, 150);
+}
 
 // ── Sorting ───────────────────────────────────────────────────────────────────
 function sortBy(key){
@@ -1004,7 +1020,7 @@ function renderTable(){
     // Show a small badge when the user has logged reading sessions.
     var sessionCount=b.sessions&&b.sessions.length;
     var sessionBadge=sessionCount?(sessionCount>1?'<span class="sbadge">'+sessionCount+' reads</span>':(b.sessions[0].end?'<span class="sbadge">'+esc(b.sessions[0].end)+'</span>':'')):'';
-    rows+='<tr class="'+rowClass+'">'
+    rows+='<tr class="'+rowClass+'" data-bidx="'+b.idx+'">'
       +'<td><button class="chk'+(isRead?' checked':'')+'" onclick="toggleRead('+b.idx+')"></button></td>'
       +'<td><div class="title-cell-wrap">'
         +'<span class="title-text" onmouseenter="showTT('+b.idx+',this)" onmouseleave="hideTT('+b.idx+')">'
@@ -1062,10 +1078,55 @@ function hideTT(idx){
 }
 
 // ── Toggle read ───────────────────────────────────────────────────────────────
+// ── Surgical row updates ──────────────────────────────────────────────────────
+// For common toggles (read, fav, rating) we update just the affected row
+// in the DOM rather than rebuilding the whole table. At a few hundred books
+// the rebuild starts feeling noticeable (~100-250ms); these updates are
+// effectively instant regardless of list size. We fall back to a full
+// renderTable() when the change could reorder rows (e.g. toggling Reading
+// floats a book to/from the top, or changing myRating while sorted by it).
+
+// Find the <tr> for a given books-array index in the current view.
+function findRow(idx){
+  if(currentTab!=="list") return null;
+  return document.querySelector('#book-tbody tr[data-bidx="'+idx+'"]');
+}
+
+// Refresh a row's read/reading classes and its checkbox visual state.
+function patchRowReadState(idx){
+  var tr=findRow(idx); if(!tr) return;
+  var isRead=readSet.has(idx), isReading=books[idx].isReading;
+  tr.className=(isRead?'is-read':'')+(isReading?' is-reading':'');
+  var chk=tr.querySelector('button.chk');
+  if(chk) chk.classList.toggle('checked', isRead);
+}
+
+// Refresh the favourite-button styling on a row.
+function patchRowFav(idx){
+  var tr=findRow(idx); if(!tr) return;
+  var btn=tr.querySelector('button.fav-btn');
+  if(btn) btn.classList.toggle('on', !!books[idx].isFav);
+}
+
+// Refresh the rating cell on a row (re-renders the 5 stars).
+function patchRowRating(idx){
+  var tr=findRow(idx); if(!tr) return;
+  var cell=tr.children[4]; // 5th td is My Rating
+  if(cell) cell.innerHTML = myStarsHTML(idx, books[idx].myRating || 0);
+}
+
 function toggleRead(idx){
+  var wasReading = books[idx].isReading;
   if(readSet.has(idx)){readSet.delete(idx);}else{readSet.add(idx);books[idx].isReading=false;}
   saveCurrentList();updateStats();
-  currentTab==="list"?renderTable():renderGenreTab();
+  // If the book was also currently-reading, we just cleared that flag,
+  // which changes its position in the sort (currently-reading floats top).
+  // That requires a full re-render. Otherwise the row stays in place.
+  if(currentTab!=="list" || wasReading){
+    currentTab==="list" ? renderTable() : renderGenreTab();
+  } else {
+    patchRowReadState(idx);
+  }
 }
 
 // ── Genre tab ─────────────────────────────────────────────────────────────────
@@ -1622,7 +1683,13 @@ function saveP(){storage.setItem(LS_DEL,JSON.stringify(delBuiltins));storage.set
 
 
 // ── Favourites ────────────────────────────────────────────────────────────────
-function toggleFav(idx){books[idx].isFav=!books[idx].isFav;saveCurrentList();renderTable();}
+function toggleFav(idx){
+  books[idx].isFav = !books[idx].isFav;
+  saveCurrentList();
+  // Favourite state doesn't affect sort, filter, or stats — surgical update only.
+  if(currentTab==="list") patchRowFav(idx);
+  else renderGenreTab();
+}
 
 // ── Currently Reading ─────────────────────────────────────────────────────────
 function toggleReading(idx){
